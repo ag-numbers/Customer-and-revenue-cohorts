@@ -28,19 +28,17 @@ I created 4 heatmaps:
 
 ## Key insights
 
-- Strong drop after month 1: Most customers make only one purchase
-- Stable long-term retention: After month 3–4, retention stabilizes at ~2–4%
-- Revenue retention > customer retention: Fewer returning customers, but higher spend per returning user
-- High dependency on new customers: Month 0 generates the majority of revenue across all cohorts
-- No clear improvement in newer cohorts: Retention patterns remain consistent over time
+- Most customers do not return after the first purchase. Retention drops sharply after month 1.
+- Some customers return later. In several cohorts retention increases again in later months, which may indicate seasonal purchases or a longer buying cycle. Customer acquisition and revenue peaks in October–December, supporting a seasonal shopping pattern.
+- Returning customers generate a significant revenue share. Even though the number of returning users is small, their spending is relatively high.
+- The business relies heavily on new customers. Most revenue is generated during the first purchase.
 
 ## Business recommendations
 
-- Getting customers to come back for a second purchase, especially in the first month after they buy. This can be done by improving post-purchase engagement (email, loyalty, reminders)
-or creating repeat purchase incentives after first order.
-- Identifying and targeting high-value repeat customers, since they generate a high share of revenue
-- Relying mostly on new customer acquisition is risky, so improving retention could make growth more sustainable
-- Running experiments to improve month 1 retention, which has the biggest drop
+- Getting customers to come back for a second purchase, especially in the first month after they buy. This can be done by improving post-purchase engagement (email, loyalty, reminders) or creating repeat purchase incentives after first order.
+- Identifying the charateristics of returning customers and target similar audiences.
+- Relying mostly on new customer acquisition is risky, so improving retention could make growth more sustainable.
+- Running experiments to improve month 1 retention, which has the biggest drop.
 
 ### Tools useed
 - **PostgreSQL / Supabase**: data modeling + cohort calculations
@@ -53,15 +51,14 @@ or creating repeat purchase incentives after first order.
 - `products` (product attributes and unit price)
 - 
 ## Link to the online dashboard 
-https://public.tableau.com/shared/TFS8YPDP4?:display_count=n&:origin=viz_share_link 
+https://public.tableau.com/app/profile/alina.lihostaieva/viz/Customercohortprojecttableaunew/Story1?publish=yes 
 
-<img width="1126" height="589" alt="Customer cohort" src="https://github.com/user-attachments/assets/7e79fdcd-2557-41fb-8044-f05d373e9972" />
+<img width="946" height="759" alt="Screenshot 2026-03-07 at 09 46 09" src="https://github.com/user-attachments/assets/d8fe8509-fc48-47b9-ad01-50440775a9a2" />
 
-<img width="1079" height="593" alt="Customer cohort %" src="https://github.com/user-attachments/assets/6b40bb81-1e7e-4827-89f3-3725e38b32e3" />
+<img width="951" height="734" alt="Screenshot 2026-03-07 at 09 46 54" src="https://github.com/user-attachments/assets/2b6ad273-4b8b-4c01-b526-0936f5faa4d3" />
+<img width="949" height="762" alt="Screenshot 2026-03-07 at 09 47 12" src="https://github.com/user-attachments/assets/45f8facf-81cf-4474-8b3a-7be96abec4ff" />
 
-<img width="1124" height="602" alt="Revenue cohort %" src="https://github.com/user-attachments/assets/94b8b840-fab3-47c5-a302-c69f5bf0c577" />
-
-<img width="1121" height="593" alt="Cohort revenue" src="https://github.com/user-attachments/assets/97103514-041c-4e0c-86c4-d58a9e7a3799" />
+<img width="973" height="730" alt="Screenshot 2026-03-07 at 09 50 49" src="https://github.com/user-attachments/assets/862cb2a3-9cab-43c2-aad6-a967a524c673" />
 
 <img width="1129" height="253" alt="Sample dataset" src="https://github.com/user-attachments/assets/df5f4787-4203-4d96-b397-78450a22b7ba" />
 
