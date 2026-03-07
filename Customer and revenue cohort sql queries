@@ -1,0 +1,253 @@
+---create separate tables and set correct data types
+--create products table
+create table Products
+(id bigserial primary key,
+category text,
+sub_category text,
+product_name text,
+unit_price numeric (12,2)
+);
+insert into Products (category, sub_category, product_name, unit_price)
+select distinct "Category", "Sub_Category", "Product_Name", cast("Unit_Price" as Numeric (12,2)) from "Raw sales table";
+
+--create customers table
+create table customers 
+(customer_id bigserial primary key,
+customer_name text,
+city text,
+state text,
+country text,
+region text
+);
+
+insert into customers (customer_name, city, state, country, region)
+select distinct
+"Customer_Name",
+"City",
+"State",
+"Country",
+"Region"
+from "Raw sales table";
+
+--create table order_items
+create table order_items (
+order_id bigint,
+product_id bigint,
+quantity int,
+unit_price numeric(12,2),
+revenue numeric (12,2),
+profit numeric (12,2));
+
+insert into order_items (order_id, product_id, quantity, unit_price, revenue, profit)
+select "Order_ID", products.id, "Quantity", "Unit_Price", "Revenue", "Profit" from "Raw sales table" 
+join products 
+on products.product_name = "Raw sales table"."Product_Name"
+and products.category = "Raw sales table"."Category"
+and products.sub_category = "Raw sales table"."Sub_Category"
+and products.unit_price = "Raw sales table"."Unit_Price"::numeric(12,2);
+
+alter table order_items
+add column if not exists id bigserial primary key;
+
+--check for NULLs on order ID before creating orders table with order_id as a primary key for unique orders
+select
+  count(*) as total_rows,
+  count(*) filter (where "Order_ID" is null) as null_order_id
+from "Raw sales table";
+
+drop table if exists orders;
+--create orders table
+create table orders(
+order_id bigint primary key,
+order_date date,
+customer_id bigint,
+city text,
+state text,
+country text,
+region text);
+
+insert into orders(order_id,order_date,customer_id,city,state,country,region)
+select "Order_ID", min("Order_Date"), min(customers.customer_id), min("City"), min("State"), min("Country"), min("Region") from "Raw sales table"
+join customers on customers.customer_name = "Raw sales table"."Customer_Name"
+group by "Order_ID";
+
+--set up connections but before sanity check 
+-- Are there any orders with customer_id not found in customers?
+select count(*) as missing_customers
+from orders
+left join customers on customers.customer_id = orders.customer_id
+where customers.customer_id is null;
+
+--Are there any order_items with order_id not found in orders?
+select count(*) as missing_orders
+from order_items
+left join orders on orders.order_id = order_items.order_id
+where orders.order_id is null;
+
+--Are there any order_items with product_id not found in products?
+select count(*) as missing_products
+from order_items
+left join products on products.id = order_items.product_id
+where products.id is null;
+
+--orders → customers
+alter table orders
+add constraint fk_orders_customer
+foreign key (customer_id) references customers(customer_id);
+
+--order_items → orders
+alter table order_items
+add constraint fk_order_items_order
+foreign key (order_id) references orders(order_id);
+
+--order_items → products
+alter table order_items
+add constraint fk_order_items_product
+foreign key (product_id) references products(id);
+
+---data quality checks 
+--NULLs
+select * from customers where customer_id is null;
+select * from customers where customer_name is null;
+
+select * from orders where order_id is null;
+select * from orders where order_date is null;
+
+select * from products where id is null;
+select * from products where product_name is null;
+select * from products where unit_price is null;
+
+select * from order_items where order_id is null;
+select * from order_items where quantity is null;
+
+--check whitespaces
+select *
+from products
+where product_name <> trim(product_name)
+or category <> trim(category)
+or sub_category <> trim(sub_category);
+
+select *
+from customers
+where customer_name <> trim(customer_name)
+or city <> trim(city)
+or state <> trim(state)
+or country <> trim(country)
+or region <> trim(region);
+
+--numerical checks
+select *
+from order_items
+where quantity < 0
+or unit_price < 0
+or revenue < 0
+or profit < 0;
+
+select *
+from order_items
+where quantity = 0
+or unit_price = 0
+or revenue = 0;
+
+select *
+from order_items
+where revenue <> unit_price*quantity;
+
+select *
+from products
+where unit_price is null
+or unit_price <= 0;
+
+--check outliers
+select
+min(quantity) as min_qty,
+max(quantity) as max_qty,
+min(unit_price) as min_price,
+max(unit_price) as max_price,
+min(revenue) as min_revenue,
+max(revenue) as max_revenue
+from order_items;
+
+--assign each customer to specific cohort based on the first purchase month and create customer_cohort view for easier reuse
+create view customer_cohort as(
+select customer_id, min(order_date) as first_order_date,
+date_trunc('month', min(order_date)) as cohort_month
+from orders
+group by customer_id);
+
+--Calculate retention rate
+--label every order with cohort + month_number
+with cohort_orders as (
+select
+o.customer_id,
+ch.cohort_month, (extract(year from age(date_trunc('month', o.order_date), ch.cohort_month)) * 12 + extract(month from age(date_trunc('month', o.order_date), ch.cohort_month))) as month_number
+from orders o
+join customer_cohort ch
+on o.customer_id = ch.customer_id),
+
+--count returning customers per cohort/month_number
+cohort_counts as (
+select
+cohort_month,
+month_number,
+count(distinct customer_id) as active_customers 
+from cohort_orders
+group by cohort_month, month_number),
+
+-- get the month 0 baseline per cohort
+cohort_sizes as (
+select
+cohort_month,
+active_customers as cohort_size
+from cohort_counts
+where month_number = 0)
+
+--calculate retention
+select
+cohort_month,
+month_number,
+active_customers,
+first_value (active_customers) over (partition by cohort_month order by month_number) as cohort_size,
+round(100.0 * active_customers / first_value (active_customers) over (partition by cohort_month order by month_number), 2) as retention_perc
+from cohort_counts c
+order by c.cohort_month, c.month_number;
+
+--Revenue cohort per month
+with cohort_orders as (
+select
+o.customer_id,
+ch.cohort_month::date as cohort_month,
+(extract(year from age(date_trunc('month', o.order_date), ch.cohort_month)) * 12 + extract(month from age(date_trunc('month', o.order_date), ch.cohort_month))) as month_number,
+o.order_id
+from orders o
+join customer_cohort ch
+on o.customer_id = ch.customer_id),
+
+revenue_by_cohort as (
+select
+cohort_orders.cohort_month,
+cohort_orders.month_number,
+sum(oi.revenue) as total_revenue
+from cohort_orders
+join order_items oi
+on oi.order_id = cohort_orders.order_id
+group by cohort_orders.cohort_month, cohort_orders.month_number),
+
+cohort_revenue_base as (
+select
+cohort_month,
+total_revenue as revenue_month0
+from revenue_by_cohort
+where month_number = 0)
+
+select
+r.cohort_month,
+r.month_number,
+b.revenue_month0,
+r.total_revenue,
+round(100.0 * r.total_revenue / b.revenue_month0, 2) as revenue_retention_pct
+from revenue_by_cohort r
+join cohort_revenue_base b
+on r.cohort_month = b.cohort_month
+order by r.cohort_month, r.month_number;
+
