@@ -37,8 +37,7 @@ I created 4 heatmaps:
 
 - Getting customers to come back for a second purchase, especially in the first month after they buy. This can be done by improving post-purchase engagement (email, loyalty, reminders) or creating repeat purchase incentives after first order.
 - Identifying the charateristics of returning customers and target similar audiences.
-- Relying mostly on new customer acquisition is risky, so improving retention could make growth more sustainable.
-- Running experiments to improve month 1 retention, which has the biggest drop.
+- Marketing campaigns should begin before the peak season so the company can capture customer interest early and maximize sales during the holiday period.
 
 ### Tools useed
 - **PostgreSQL / Supabase**: data modeling + cohort calculations
